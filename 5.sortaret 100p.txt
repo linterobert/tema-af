@@ -1,0 +1,42 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <deque>
+
+using namespace std;
+
+int main(){
+    int nr_muchii, nr_noduri;
+    deque < int > sortare;
+    ifstream fin("sortaret.in");
+    ofstream fout("sortaret.out");
+
+    fin >> nr_noduri >> nr_muchii;
+    vector < vector < int > > vecini(nr_noduri+1);
+    vector < vector < int > > vecini1(nr_noduri+1);
+    vector < int > grade(nr_noduri+1);
+    for( int i = 0; i < nr_muchii; i++ ){
+        int intrare, iesire;
+        fin >> intrare >> iesire;
+        vecini[iesire].push_back(intrare);
+        vecini1[intrare].push_back(iesire);
+    }
+    grade[0] = -1;
+    for( int i = 1; i <= nr_noduri; i++ ){
+        grade[i] = vecini[i].size();
+        if( vecini[i].size() == 0 ){
+            sortare.push_back(i);
+        }
+    }
+    while( sortare.size() != 0 ){
+        int nr = sortare[0];
+        fout << nr << " ";
+        sortare.pop_front();
+        for( int i = 0; i < vecini1[nr].size(); i++ ){
+            grade[vecini1[nr][i]]--;
+            if( grade[ vecini1[nr][i] ] == 0 ){
+                sortare.push_back( vecini1[nr][i] );
+            }
+        }
+    }
+}

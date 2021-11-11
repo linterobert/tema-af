@@ -1,0 +1,70 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <deque>
+ 
+using namespace std;
+ 
+void strongconnect(int v,int &index, vector <int> &indexv,vector <int> &lowlink,vector <bool> &on_stack, vector < vector < int > > &vecini, deque <int> &S, vector < vector < int > > &componente){
+    indexv[v] = index;
+    lowlink[v] = index;
+    index++;
+    S.push_front(v);
+    on_stack[v] = 1;
+    int w;
+    for( int i = 0; i < vecini[v].size(); i++ ){
+        w = vecini[v][i];
+        if( indexv[w] == -1 ){
+            strongconnect(w, index,indexv,lowlink,on_stack,vecini,S,componente);
+            if( lowlink[ w ] < lowlink[v] ){
+                lowlink[v] = lowlink[w];
+            }
+        }
+        else{
+            if( on_stack[w] == 1 ){
+                if( indexv[ w ] < lowlink[v] ){
+                        lowlink[v] = indexv[ w ];
+                }
+            }
+        }
+    }
+    if( lowlink[v] == indexv[v] ){
+        vector < int > componenta;
+        do{
+            w = S[0];
+            S.pop_front();
+            on_stack[w] = 0;
+            componenta.push_back(w);
+        }while( w != v );
+        componente.push_back(componenta);
+    }
+}
+int main(){
+    int index = 0;
+    ifstream fin("ctc.in");
+    ofstream fout("ctc.out");
+    int nr_noduri, nr_muchii;
+    fin >> nr_noduri >> nr_muchii;
+    vector < vector < int > > vecini(nr_noduri+1);
+    vector < int > indexv(nr_noduri+1,-1), lowlink(nr_noduri+1,0);
+    vector < bool > on_stack(nr_noduri+1,0);
+    vector < vector < int > > componente;
+    deque < int > S;
+    for( int i = 0; i < nr_muchii; i++ ){
+        int intrare, iesire;
+        fin >> intrare >> iesire;
+        vecini[intrare].push_back(iesire);
+    }
+    for( int i = 1; i <= nr_noduri; i++ ){
+        if( indexv[i] == -1 ){
+            strongconnect(i,index,indexv,lowlink,on_stack,vecini,S, componente);
+        }
+    }
+    fout << componente.size() << "\n";
+    for( int i = 0; i < componente.size(); i++ ){
+        for( int j = 0; j < componente[i].size(); j++ ){
+            fout << componente[i][j] << " ";
+        }
+        fout << "\n";
+    }
+}

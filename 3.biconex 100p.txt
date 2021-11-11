@@ -1,0 +1,77 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <deque>
+ 
+using namespace std;
+ 
+void DFS( int k, int tata, vector < int > &v, vector < int > &nivel, vector < int > &nma, vector < vector < int > > &vecini, deque < int > &s, vector < vector < int > > &bic ){
+    v[k] = 1;
+    s.push_front(k);
+    if( tata == -1 ){
+        nivel[k] = 1;
+    }
+    else nivel[k] = nivel[tata] + 1;
+    nma[k] = nivel[k];
+    for( int i = 0; i < vecini[k].size(); i++ ){
+        int x;
+        x = vecini[k][i];
+        if( x != tata ){
+            if( v[x] == 1 ){
+                if( nma[k] > nivel[x] ){
+                    nma[k] = nivel[x];
+                }
+            }
+            else{
+                DFS(x, k, v, nivel, nma, vecini, s, bic);
+                if( nma[k] > nma[x] ){
+                    nma[k] = nma[x];
+                }
+                if( nivel[k] <= nma[x] ){
+                    vector < int > conex;
+                    while( s[0] != x ){
+                        conex.push_back(s[0]);
+                        s.pop_front();
+                    }
+                    conex.push_back(x);
+                    s.pop_front();
+                    conex.push_back(k);
+                    bic.push_back(conex);
+                }
+            }
+        }
+    }
+}
+ 
+int main(){
+    vector < int > v, nivel,nma;
+    deque < int > s;
+    int n, m;
+    ifstream fin( "biconex.in" );
+    ofstream fout( "biconex.out" );
+    fin >> n >> m;
+    vector < vector < int > > vecini, bic;
+    for( int i = 0; i <= n; i++ ){
+        vector < int > x;
+        vecini.push_back(x);
+    }
+    for( int i = 0; i < m; i++ ){
+        int intrare, iesire;
+        fin >> intrare >> iesire;
+        vecini[intrare].push_back(iesire);
+        vecini[iesire].push_back(intrare);
+    }
+    for( int i = 0; i <= n; i++ ){
+        nivel.push_back(0);
+        nma.push_back(0);
+        v.push_back(0);
+    }
+    DFS( 1, -1, v, nivel, nma, vecini, s, bic );
+    fout << bic.size() << "\n";
+    for( int i = 0; i < bic.size(); i++ ){
+        for( int j = 0; j < bic[i].size(); j++ ){
+            fout << bic[i][j] << " ";
+        }
+        fout << "\n";
+    }
+}

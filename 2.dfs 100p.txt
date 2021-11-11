@@ -1,0 +1,54 @@
+	
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <deque>
+ 
+using namespace std;
+ 
+void vizitat( vector < vector < int > > &vecini, vector < int > &culoare, vector < int > &d, vector < int > &f, int &u, int &timp ){
+    culoare[u] = 1;
+    timp++;
+    d[u] = timp;
+    for( int i = 0; i < vecini[u].size(); i++ ){
+        if( culoare[ vecini[u][i] ] == 0 ){
+            vizitat(vecini,culoare,d,f,vecini[u][i],timp);
+        }
+    }
+    culoare[u] = 2;
+    timp++;
+    f[u] = timp;
+}
+ 
+int main(){
+    ifstream fin("dfs.in");
+    ofstream fout("dfs.out");
+    vector < vector < int > > vecini;
+    int nr_noduri, nr_muchii;
+    fin >> nr_noduri >> nr_muchii;
+    for(int i = 0; i <= nr_noduri; i++){
+        vector < int > v;
+        vecini.push_back(v);
+    }
+    for( int i = 0; i < nr_muchii; i++ ){
+        int intrare, iesire;
+        fin >> intrare >> iesire;
+        vecini[intrare].push_back(iesire);
+        vecini[iesire].push_back(intrare);
+    }
+    vector < int > culoare, d, f;
+    for( int i = 0; i <= nr_noduri; i++ ){
+        culoare.push_back(0);
+        d.push_back(-1);
+        f.push_back(-1);
+    }
+    int timp = 0;
+    int contor = 0;
+    for( int i = 1; i <= nr_noduri; i++ ){
+        if( culoare[i] == 0 ){
+            contor++;
+            vizitat(vecini, culoare, d, f, i,timp);
+        }
+    }
+    fout << contor;
+}

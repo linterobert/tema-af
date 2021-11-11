@@ -1,0 +1,54 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <deque>
+ 
+using namespace std;
+ 
+int main(){
+    ifstream fin("bfs.in");
+    ofstream fout("bfs.out");
+    vector < vector < int > > vecini;
+    int nr_noduri, nr_muchii, start;
+    fin >> nr_noduri >> nr_muchii >> start;
+    for(int i = 0; i <= nr_noduri; i++){
+        vector < int > v;
+        vecini.push_back(v);
+    }
+    for( int i = 0; i < nr_muchii; i++ ){
+        int intrare, iesire;
+        fin >> intrare >> iesire;
+        vecini[intrare].push_back(iesire);
+    }
+    vector < int > culoare, d;
+    for( int i = 0; i <= nr_noduri; i++ ){
+        if( i != start ){
+            culoare.push_back(0);
+            d.push_back(-1);
+        }
+        else{
+            culoare.push_back(1);
+            d.push_back(0);
+        }
+    }
+ 
+    deque < int > Q;
+    Q.push_back(start);
+ 
+    int u;
+    while( Q.size() != 0 ){
+        u = Q[0];
+        for( int i = 0; i < vecini[u].size(); i++ ){
+            if( culoare[vecini[u][i]] == 0 ){
+                culoare[ vecini[u][i] ] = 1;
+                d[ vecini[u][i] ] = d[ u ] + 1;
+                Q.push_back( vecini[u][i] );
+            }
+        }
+        Q.pop_front();
+        culoare[u] = 2;
+    }
+    for( int i = 1; i < culoare.size(); i++ ){
+        fout << d[i] << " ";
+    }
+}

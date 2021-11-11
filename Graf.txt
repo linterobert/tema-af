@@ -1,0 +1,535 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <deque>
+using namespace std;
+
+class Graf{
+    int nr_noduri;
+    vector < vector < int > > lista_vecini;
+public:
+    Graf();
+    Graf( int nr_noduri1, vector < vector < int > > lista_vecini1 );
+    Graf( const Graf &ob );
+    Graf &operator = ( Graf &ob );
+    ~Graf(){};
+    friend istream &operator >> ( istream &in, Graf &ob );
+    friend ostream &operator << ( ostream &out, Graf &ob );
+    void citire();
+    void afisare();
+    void bfs();
+    void dfs();
+    void vizitat(vector < int > &culoare, vector < int > &d, vector < int > &f, int &u, int &timp);
+    void strongconnect(int v,int &index, vector <int> &indexv,vector <int> &lowlink,vector <bool> &on_stack, deque <int> &S, vector < vector < int > > &componente);
+    void ctc();
+    void dfs_bi( int k, int tata, vector < int > &v, vector < int > &nivel, vector < int > &nma, deque < int > &s, vector < vector < int > > &bic );
+    void biconex();
+    void sortaret();
+    void dfs_muchii( int k, int tata, vector < int > &v, vector < int > &nivel, vector < int > &nma );
+    void muchii_critice();
+    void Hakimi();
+};
+
+Graf :: Graf(){
+    nr_noduri = 0;
+}
+Graf :: Graf( int nr_noduri1, vector < vector < int > > lista_vecini1 ){
+    nr_noduri = 0;
+    for( int i = 0; i < lista_vecini1.size(); i++ ){
+        lista_vecini.push_back(lista_vecini1[i]);
+    }
+}
+Graf :: Graf( const Graf &ob ){
+    nr_noduri = ob.nr_noduri;
+    for( int i = 0; i < ob.lista_vecini.size(); i++ ){
+        lista_vecini.push_back(ob.lista_vecini[i]);
+    }
+}
+Graf &Graf::operator = ( Graf &ob ){
+    if( this != &ob ){
+        nr_noduri = ob.nr_noduri;
+        for( int i = 0; i < ob.lista_vecini.size(); i++ ){
+            lista_vecini.push_back(ob.lista_vecini[i]);
+        }
+    }
+    return *this;
+}
+istream &operator >> (istream &in, Graf &ob){
+    cout << "Optiuni de graf disponibile: " << endl;
+    cout << "1.orientat;" << endl;
+    cout << "2.neorientat;" << endl << endl;
+    int optiune = 0;
+    while( optiune != 1 && optiune != 2 ){
+        cout << "Introduceti optiunea: ";
+        in >> optiune;
+        if( optiune != 1 && optiune != 2 ){
+            cout << "Optiune inexistenta." << endl;
+            cout << "-----------------------------------------------------------------------------" << endl;
+        }
+    }
+    if( optiune == 1 ){
+        cout << "Introduceti numarul de noduri: ";
+        in >> ob.nr_noduri;
+        for( int i = 0; i <= ob.nr_noduri; i++ ){
+            vector < int > v;
+            ob.lista_vecini.push_back(v);
+        }
+        cout << "Introduceti numarul de muchii: ";
+        int m;
+        in >> m;
+        for( int i = 0; i < m; i++ ){
+            int intrare, iesire;
+            cout << "Introduceti muchia cu numarul " << i+1 << ": ";
+            in >> intrare >> iesire;
+            ob.lista_vecini[intrare].push_back(iesire);
+        }
+    }
+    if( optiune == 2 ){
+        cout << "Introduceti numarul de noduri: ";
+        in >> ob.nr_noduri;
+        for( int i = 0; i <= ob.nr_noduri; i++ ){
+            vector < int > v;
+            ob.lista_vecini.push_back(v);
+        }
+        cout << "Introduceti numarul de muchii: ";
+        int m;
+        in >> m;
+        for( int i = 0; i < m; i++ ){
+            int intrare, iesire;
+            cout << "Introduceti muchia cu numarul " << i+1 << ": ";
+            in >> intrare >> iesire;
+            ob.lista_vecini[intrare].push_back(iesire);
+            ob.lista_vecini[iesire].push_back(intrare);
+        }
+    }
+    return in;
+}
+ostream &operator << (ostream &out, Graf &ob){
+    out << "Numar noduri: " << ob.nr_noduri << endl;
+    out << "Muchii: " << endl;
+    for( int i = 0; i < ob.lista_vecini.size(); i++ ){
+        for( int j = 0; j < ob.lista_vecini[i].size(); j++ ){
+            out << i << " " << ob.lista_vecini[i][j] << endl;
+        }
+    }
+    return out;
+}
+
+//problema 1 -100pct
+void Graf::bfs(){
+    vector < int > culoare, d;
+    int start;
+    cout << "Introduceti nodurl de pornire: ";
+    cin >> start;
+    for( int i = 0; i <= nr_noduri; i++ ){
+        if( i != start ){
+            culoare.push_back(0);
+            d.push_back(-1);
+        }
+        else{
+            culoare.push_back(1);
+            d.push_back(0);
+        }
+    }
+    deque < int > Q;
+    Q.push_back(start);
+
+    int u;
+    while( Q.size() != 0 ){
+        u = Q[0];
+        for( int i = 0; i < lista_vecini[u].size(); i++ ){
+            if( culoare[ lista_vecini[u][i]] == 0 ){
+                culoare[ lista_vecini[u][i] ] = 1;
+                d[ lista_vecini[u][i] ] = d[u] + 1;
+                Q.push_back( lista_vecini[u][i] );
+            }
+        }
+        Q.pop_front();
+        culoare[u] = 2;
+    }
+    cout << "Solutie problema bfs: ";
+    for( int i = 1; i< culoare.size(); i++ ){
+        cout << d[i] << " ";
+    }
+    cout << endl;
+}
+
+//problema2 -100pct
+void Graf::dfs(){
+    vector < int > culoare, d, f;
+    for( int i = 0; i <= nr_noduri; i++ ){
+        culoare.push_back(0);
+        d.push_back(-1);
+        f.push_back(-1);
+    }
+    int timp = 0;
+    int contor = 0;
+    for( int i = 1; i <= nr_noduri; i++ ){
+        if( culoare[i] == 0 ){
+            contor++;
+            Graf::vizitat(culoare, d, f, i,timp);
+        }
+    }
+    cout << "Solutie problema dfs-componente conexe: " << contor << endl;
+}
+void Graf::vizitat(vector < int > &culoare, vector < int > &d, vector < int > &f, int &u, int &timp){
+    culoare[u] = 1;
+    timp++;
+    d[u] = timp;
+    for( int i = 0; i < lista_vecini[u].size(); i++ ){
+        if( culoare[ lista_vecini[u][i] ] == 0 ){
+            vizitat(culoare,d,f,lista_vecini[u][i],timp);
+        }
+    }
+    culoare[u] = 2;
+    timp++;
+    f[u] = timp;
+}
+
+//problema3 -100pct
+void Graf::dfs_bi( int k, int tata, vector < int > &v, vector < int > &nivel, vector < int > &nma, deque < int > &s, vector < vector < int > > &bic ){
+    v[k] = 1;
+    s.push_front(k);
+    if( tata == -1 ){
+        nivel[k] = 1;
+    }
+    else nivel[k] = nivel[tata] + 1;
+    nma[k] = nivel[k];
+    for( int i = 0; i < lista_vecini[k].size(); i++ ){
+        int x;
+        x = lista_vecini[k][i];
+        if( x != tata ){
+            if( v[x] == 1 ){
+                if( nma[k] > nivel[x] ){
+                    nma[k] = nivel[x];
+                }
+            }
+            else{
+                dfs_bi(x, k, v, nivel, nma, s, bic);
+                if( nma[k] > nma[x] ){
+                    nma[k] = nma[x];
+                }
+                if( nivel[k] <= nma[x] ){
+                    vector < int > conex;
+                    while( s[0] != x ){
+                        conex.push_back(s[0]);
+                        s.pop_front();
+                    }
+                    conex.push_back(x);
+                    s.pop_front();
+                    conex.push_back(k);
+                    bic.push_back(conex);
+                }
+            }
+        }
+    }
+}
+void Graf::biconex(){
+    vector < int > v, nivel,nma;
+    vector < vector < int > > bic;
+    deque < int > s;
+    for( int i = 0; i <= nr_noduri; i++ ){
+        nivel.push_back(0);
+        nma.push_back(0);
+        v.push_back(0);
+    }
+    dfs_bi( 1, -1, v, nivel, nma, s, bic );
+    cout << "Solutie problema componente biconexe: " << endl;
+    cout << "Numar componente biconexe: " << bic.size() << endl;
+    cout << "Componente: " << endl;
+    for( int i = 0; i < bic.size(); i++ ){
+        cout << "-" << i+1 << ": ";
+        for( int j = 0; j < bic[i].size(); j++ ){
+            cout << bic[i][j] << " ";
+        }
+        cout << endl;
+    }
+}
+
+//problema4 -100pct
+
+void Graf::strongconnect(int v,int &index, vector <int> &indexv,vector <int> &lowlink,vector <bool> &on_stack, deque <int> &S, vector < vector < int > > &componente){
+    indexv[v] = index;
+    lowlink[v] = index;
+    index++;
+    S.push_front(v);
+    on_stack[v] = 1;
+    int w;
+    for( int i = 0; i < lista_vecini[v].size(); i++ ){
+        w = lista_vecini[v][i];
+        if( indexv[w] == -1 ){
+            strongconnect(w, index,indexv,lowlink,on_stack,S,componente);
+            if( lowlink[ w ] < lowlink[v] ){
+                lowlink[v] = lowlink[w];
+            }
+        }
+        else{
+            if( on_stack[w] == 1 ){
+                if( indexv[ w ] < lowlink[v] ){
+                        lowlink[v] = indexv[ w ];
+                }
+            }
+        }
+    }
+    if( lowlink[v] == indexv[v] ){
+        vector < int > componenta;
+        do{
+            w = S[0];
+            S.pop_front();
+            on_stack[w] = 0;
+            componenta.push_back(w);
+        }while( w != v );
+        componente.push_back(componenta);
+    }
+}
+void Graf::ctc(){
+    vector < int > indexv, lowlink;
+    vector < bool > on_stack;
+    vector < vector < int > > componente;
+    deque < int > S;
+    int index = 0;
+    indexv.push_back(0);
+    lowlink.push_back(0);
+    on_stack.push_back(0);
+    for(int i = 0; i < nr_noduri; i++){
+        indexv.push_back(-1);
+        lowlink.push_back(0);
+        on_stack.push_back(0);
+    }
+    for( int i = 1; i <= nr_noduri; i++ ){
+        if( indexv[i] == -1 ){
+            strongconnect(i,index,indexv,lowlink,on_stack,S, componente);
+        }
+    }
+    cout << "Numar componente tare conexe: " << componente.size() << endl;
+    cout << "Componente: " << "\n";
+    for( int i = 0; i < componente.size(); i++ ){
+        cout << "-" << i+1 << ": ";
+        for( int j = 0; j < componente[i].size(); j++ ){
+            cout << componente[i][j] << " ";
+        }
+        cout << "\n";
+    }
+}
+
+//problema5 -100pct
+void Graf::sortaret(){
+    deque < int > sortare;
+    vector < int > grade(nr_noduri+1);
+    vector < vector < int > > vecini1;
+    for( int i = 0; i <= lista_vecini.size(); i++ ){
+        vector < int > v;
+        vecini1.push_back(v);
+    }
+    for( int i = 0; i < lista_vecini.size(); i++ ){
+        for( int j = 0; j < lista_vecini[i].size(); j++ ){
+            vecini1[lista_vecini[i][j]].push_back(i);
+        }
+    }
+    grade[0] = -1;
+    for( int i = 1; i <= nr_noduri; i++ ){
+        grade[i] = vecini1[i].size();
+        if( vecini1[i].size() == 0 ){
+            sortare.push_back(i);
+        }
+    }
+    cout << "Sortare topologica: " << endl;
+    while( sortare.size() != 0 ){
+        int nr = sortare[0];
+        cout << nr << " ";
+        sortare.pop_front();
+        for( int i = 0; i < lista_vecini[nr].size(); i++ ){
+            grade[lista_vecini[nr][i]]--;
+            if( grade[ lista_vecini[nr][i] ] == 0 ){
+                sortare.push_back( lista_vecini[nr][i] );
+            }
+        }
+    }
+}
+
+//problema6 -100pct
+void Graf::Hakimi(){
+    int nr_noduri;
+    deque < int > grade;
+    deque < int > nr_ordine;
+    int suma = 0, ok = 1;
+    cout << "Introduceti numarul de noduri: ";
+    cin >> nr_noduri;
+    vector < vector < int > > vecini(nr_noduri+1);
+    cout << "Introduceti gradele nodurilor: ";
+    for( int i = 1; i <= nr_noduri; i++ ){
+        int grad;
+        cin >> grad;
+        grade.push_back(grad);
+        nr_ordine.push_back(i);
+        suma = suma + grad;
+        if( grad > nr_noduri-1 ) ok = 0;
+    }
+    if( suma % 2 == 1 ) ok = 0;
+    if( ok == 0 ){
+        cout << "Nu se poate obtine un graf";
+    }
+    else{
+        //sortare descrescatoare
+        for( int i = 0; i < grade.size(); i++ ){
+            for( int j = 0; j < i; j++ ){
+                if( grade[i] > grade[j] ){
+                    int aux;
+                    aux = grade[i];
+                    grade[i] = grade[j];
+                    grade[j] = aux;
+                    aux = nr_ordine[i];
+                    nr_ordine[i] = nr_ordine[j];
+                    nr_ordine[j] = aux;
+                }
+            }
+        }
+        while( grade[0] != 0 || grade[ grade.size()-1 ] < 0 ){
+            //salvam datele pentru gradul cel mai mare si il eliminam
+            int dk = grade[0];
+            int nod = nr_ordine[0];
+            grade.pop_front();
+            nr_ordine.pop_front();
+            //afisam muchiile
+            for( int i = 0; i < dk; i++ ){
+                vecini[nod].push_back(nr_ordine[i]);
+                grade[i]--;
+            }
+            //resortam descrescator
+            for( int i = 0; i < grade.size(); i++ ){
+                for( int j = 0; j < i; j++ ){
+                    if( grade[i] > grade[j] ){
+                        int aux;
+                        aux = grade[i];
+                        grade[i] = grade[j];
+                        grade[j] = aux;
+                        aux = nr_ordine[i];
+                        nr_ordine[i] = nr_ordine[j];
+                        nr_ordine[j] = aux;
+                    }
+                }
+            }
+        }
+        if( grade[0] == 0 && grade[grade.size()-1] >= 0 ){
+            cout << "Muchii: " << endl;
+            for( int i = 0; i < vecini.size(); i++ ){
+                for( int j = 0; j < vecini[i].size(); j++ ){
+                    cout << i << " " << vecini[i][j] << endl;
+                }
+            }
+        }
+        else{
+            cout << "Nu se poate construi acest graf";
+        }
+    }
+}
+
+//problema7 -100pct
+void Graf::dfs_muchii( int k, int tata, vector < int > &v, vector < int > &nivel, vector < int > &nma ){
+    v[k] = 1;
+    if( tata == -1 ){
+        nivel[k] = 1;
+    }
+    else nivel[k] = nivel[tata] + 1;
+    nma[k] = nivel[k];
+    for( int i = 0; i < lista_vecini[k].size(); i++ ){
+        int x;
+        x = lista_vecini[k][i];
+        if( x != tata ){
+            if( v[x] == 1 ){
+                if( nma[k] > nivel[x] ){
+                    nma[k] = nivel[x];
+                }
+            }
+            else{
+                dfs_muchii(x, k, v, nivel, nma);
+                if( nma[k] > nma[x] ){
+                    nma[k] = nma[x];
+                }
+                if( nivel[k] < nma[x] ){
+                    cout << k << " " << x << endl;
+                }
+            }
+        }
+    }
+}
+void Graf::muchii_critice(){
+    vector < int > nivel, nma, v;
+    for( int i = 0; i < nr_noduri; i++ ){
+        nivel.push_back(0);
+        nma.push_back(0);
+        v.push_back(0);
+    }
+    dfs_muchii( 0, -1, v, nivel, nma);
+}
+
+int main(){
+    int optiune = -1;
+    while(optiune != 0){
+        cout << "-----------------------------------------------------------------------------" << endl << endl;
+        cout << "Optiuni disponibile: " << endl;
+        cout << "1.problema bfs;" << endl;
+        cout << "2.problema dfs;" << endl;
+        cout << "3.problema biconex;" << endl;
+        cout << "4.problema ctc;" << endl;
+        cout << "5.problema sortaret;" << endl;
+        cout << "6.problema Hakimi;" << endl;
+        cout << "7.problema muchii critice;" << endl;
+        cout << "0.inchidere consola;" << endl << endl;
+        cout << "-----------------------------------------------------------------------------" << endl << endl;
+
+        cout << "Introduceti optiunea: ";
+        cin >> optiune;
+        cout << endl;
+        cout << "-----------------------------------------------------------------------------" << endl << endl;
+
+        if( optiune == 1 ){
+            cout << "Optiune aleasa: problema bfs" << endl << endl;
+            Graf x;
+            cin >> x;
+            x.bfs();
+        }
+        if( optiune == 2 ){
+            cout << "Optiune aleasa: problema dfs" << endl << endl;
+            Graf x;
+            cin >> x;
+            x.dfs();
+        }
+        if( optiune == 3 ){
+            cout << "Optiune aleasa: problema biconex" << endl << endl;
+            Graf x;
+            cin >> x;
+            x.biconex();
+        }
+        if( optiune == 4 ){
+            cout << "Optiune aleasa: problema ctc" << endl << endl;
+            Graf x;
+            cin >> x;
+            x.ctc();
+        }
+        if( optiune == 5 ){
+            Graf x;
+            cout << "Optiune aleasa: problema sortaret" << endl << endl;
+            cin >> x;
+            x.sortaret();
+        }
+        if( optiune == 6 ){
+            Graf x;
+            cout << "Optiune aleasa: problema Hakimi" << endl << endl;
+            x.Hakimi();
+        }
+        if( optiune == 7 ){
+            Graf x;
+            cout << "Optiune aleasa: problema muchii critice" << endl << endl;
+            cin >> x;
+            x.muchii_critice();
+        }
+        if( optiune == 0 ){
+            cout << "Optiune aleasa: inchidere consola" << endl << endl;
+            return 0;
+        }
+        if( optiune != 1 && optiune != 2 && optiune != 3 && optiune != 4 && optiune != 5 && optiune != 6 && optiune != 7 && optiune != 0){
+            cout << "Optiune inexistenta" << endl << endl;
+        }
+    }
+}
